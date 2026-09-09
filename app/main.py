@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.database import engine, Base
+from app import models  # noqa: F401 - ensures models are registered before create_all
+
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(
     title="FollowApp API",
     description="Continuity-of-care platform connecting patients, clinicians, and healthcare organisations after a consultation.",
