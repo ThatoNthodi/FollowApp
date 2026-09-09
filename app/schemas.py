@@ -83,3 +83,15 @@ class ConsultationOut(BaseModel):
     notes: Optional[str] = None
     condition: Optional[str] = None
     follow_up_tasks: List[FollowUpTaskOut] = []
+
+
+# ---------- Continuity summary ----------
+
+class PatientContinuitySummary(BaseModel):
+    patient_id: str
+    full_name: str
+    total_tasks: int
+    pending: int
+    overdue: int
+    completed: int
+    overdue_tasks: List[FollowUpTaskOut] = []

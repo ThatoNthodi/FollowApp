@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import engine, Base, get_db
 from app import models, schemas
+from app.logic import sync_overdue_tasks
 
 Base.metadata.create_all(bind=engine)
 
@@ -134,7 +135,52 @@ def get_consultation(consultation_id: str, db: Session = Depends(get_db)):
 
 @app.get("/follow-up-tasks", response_model=List[schemas.FollowUpTaskOut], tags=["follow-up-tasks"])
 def list_follow_up_tasks(db: Session = Depends(get_db)):
+    sync_overdue_tasks(db)
     return db.query(models.FollowUpTask).all()
+
+
+@app.get("/follow-up-tasks/overdue", response_model=List[schemas.FollowUpTaskOut], tags=["follow-up-tasks"])
+def list_overdue_follow_up_tasks(db: Session = Depends(get_db)):
+    """Tasks whose due date has passed and are still not completed."""
+    sync_overdue_tasks(db)
+    return (
+        db.query(models.FollowUpTask)
+        .filter(models.FollowUpTask.status == models.TaskStatus.overdue)
+        .all()
+    )
+
+
+@app.get(
+    "/patients/{patient_id}/continuity-summary",
+    response_model=schemas.PatientContinuitySummary,
+    tags=["follow-up-tasks"],
+)
+def get_patient_continuity_summary(patient_id: str, db: Session = Depends(get_db)):
+    """Outstanding care tasks for one patient, across all their consultations."""
+    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    sync_overdue_tasks(db)
+
+    tasks = (
+        db.query(models.FollowUpTask)
+        .join(models.Consultation)
+        .filter(models.Consultation.patient_id == patient_id)
+        .all()
+    )
+
+    overdue_tasks = [t for t in tasks if t.status == models.TaskStatus.overdue]
+
+    return schemas.PatientContinuitySummary(
+        patient_id=patient.id,
+        full_name=patient.full_name,
+        total_tasks=len(tasks),
+        pending=sum(1 for t in tasks if t.status == models.TaskStatus.pending),
+        overdue=len(overdue_tasks),
+        completed=sum(1 for t in tasks if t.status == models.TaskStatus.completed),
+        overdue_tasks=overdue_tasks,
+    )
 
 
 @app.patch("/follow-up-tasks/{task_id}/complete", response_model=schemas.FollowUpTaskOut, tags=["follow-up-tasks"])
