@@ -16,7 +16,11 @@ if not DATABASE_URL:
 if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,   # test each connection before using it, reconnect if stale
+    pool_recycle=280,     # recycle connections before Render's idle timeout kicks in
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
