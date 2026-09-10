@@ -1,17 +1,16 @@
 :root {
-  --navy-ink: #12233f;
-  --navy-deep: #0a1626;
-  --parchment: #f6f3ec;
-  --ivory: #fdfbf6;
-  --gold: #b8923a;
-  --gold-soft: #d9c088;
+  --blue-deep: #123a66;
+  --blue: #1d63ac;
+  --green-deep: #1f7a52;
+  --green: #2fa36b;
+  --white: #ffffff;
+  --bg: #f5f9f8;
+  --ink: #0e2438;
+  --ink-60: rgba(14, 36, 56, 0.6);
+  --ink-40: rgba(14, 36, 56, 0.4);
+  --hairline: rgba(14, 36, 56, 0.1);
   --rust: #b4432e;
-  --sage: #5c7a5e;
-  --ink-70: rgba(10, 22, 38, 0.7);
-  --ink-45: rgba(10, 22, 38, 0.45);
-  --hairline: rgba(10, 22, 38, 0.12);
 
-  --font-serif: 'Cormorant Garamond', Georgia, serif;
   --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -27,8 +26,8 @@ body,
 
 body {
   margin: 0;
-  background: var(--parchment);
-  color: var(--navy-deep);
+  background: var(--bg);
+  color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
@@ -51,25 +50,36 @@ button {
 .sidebar {
   width: 240px;
   flex-shrink: 0;
-  background: var(--navy-ink);
-  color: var(--ivory);
+  background: linear-gradient(190deg, var(--blue-deep) 0%, var(--green-deep) 100%);
+  color: var(--white);
   display: flex;
   flex-direction: column;
   padding: 28px 20px;
 }
 
+.brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+.brand-mark img {
+  height: 34px;
+  width: auto;
+}
+
 .brand {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 600;
-  font-size: 26px;
-  color: var(--gold-soft);
-  margin: 0 0 4px 2px;
+  font-weight: 700;
+  font-size: 21px;
+  color: var(--white);
+  margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .brand-tag {
   font-size: 12px;
-  color: rgba(253, 251, 246, 0.55);
+  color: rgba(255, 255, 255, 0.7);
   margin: 0 0 40px 2px;
   letter-spacing: 0.01em;
 }
@@ -88,27 +98,103 @@ button {
   padding: 10px 12px;
   border-radius: 6px;
   text-decoration: none;
-  color: rgba(253, 251, 246, 0.75);
+  color: rgba(255, 255, 255, 0.8);
   font-size: 14.5px;
   font-weight: 500;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .nav-link:hover {
-  background: rgba(253, 251, 246, 0.06);
-  color: var(--ivory);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
 }
 
 .nav-link.active {
-  background: rgba(184, 146, 58, 0.16);
-  color: var(--gold-soft);
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--white);
 }
 
 .sidebar-footer {
   margin-top: auto;
   font-size: 12px;
-  color: rgba(253, 251, 246, 0.4);
+  color: rgba(255, 255, 255, 0.55);
   line-height: 1.5;
+}
+
+.sidebar-clinician {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  font-size: 13px;
+  margin: 0 0 8px 0;
+}
+
+.sidebar-logout {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+  padding: 7px 14px;
+  font-size: 12.5px;
+  width: 100%;
+}
+
+.sidebar-logout:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ---------- Login screen ---------- */
+
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(190deg, var(--blue-deep) 0%, var(--green-deep) 100%);
+  padding: 20px;
+}
+
+.login-card {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(14, 36, 56, 0.25);
+}
+
+.login-logo {
+  height: 44px;
+  width: auto;
+  margin: 0 auto 16px;
+}
+
+.login-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: var(--ink);
+}
+
+.login-subtitle {
+  font-size: 13.5px;
+  color: var(--ink-40);
+  margin: 0 0 24px 0;
+}
+
+.login-card form {
+  text-align: left;
+}
+
+.login-footnote {
+  font-size: 12px;
+  color: var(--ink-40);
+  margin-top: 20px;
+  line-height: 1.5;
+}
+
+.login-footnote code {
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: 3px;
 }
 
 /* ---------- Main content ---------- */
@@ -127,15 +213,15 @@ button {
 }
 
 .page-title {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 34px;
+  font-weight: 700;
+  font-size: 30px;
   margin: 0;
-  color: var(--navy-deep);
+  color: var(--ink);
+  letter-spacing: -0.01em;
 }
 
 .page-subtitle {
-  color: var(--ink-45);
+  color: var(--ink-40);
   font-size: 14px;
   margin-top: 4px;
 }
@@ -145,7 +231,7 @@ button {
 .btn {
   font-family: var(--font-sans);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   padding: 9px 18px;
   border-radius: 6px;
   border: 1px solid transparent;
@@ -158,18 +244,18 @@ button {
 }
 
 .btn-primary {
-  background: var(--navy-ink);
-  color: var(--ivory);
+  background: var(--blue);
+  color: var(--white);
 }
 
 .btn-gold {
-  background: var(--gold);
-  color: var(--ivory);
+  background: var(--green);
+  color: var(--white);
 }
 
 .btn-ghost {
   background: transparent;
-  color: var(--navy-deep);
+  color: var(--ink);
   border-color: var(--hairline);
 }
 
@@ -181,7 +267,7 @@ button {
 /* ---------- Worklist table ---------- */
 
 .worklist {
-  background: var(--ivory);
+  background: var(--white);
   border: 1px solid var(--hairline);
   border-radius: 8px;
   overflow: hidden;
@@ -203,14 +289,14 @@ button {
 }
 
 .worklist-row:hover {
-  background: rgba(184, 146, 58, 0.05);
+  background: rgba(47, 163, 107, 0.05);
   cursor: pointer;
 }
 
 .worklist-row.header {
   font-size: 12px;
-  color: var(--ink-45);
-  font-weight: 500;
+  color: var(--ink-40);
+  font-weight: 600;
   cursor: default;
 }
 
@@ -219,15 +305,14 @@ button {
 }
 
 .patient-name {
-  font-family: var(--font-serif);
-  font-size: 19px;
-  font-weight: 600;
-  color: var(--navy-deep);
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .patient-meta {
   font-size: 13px;
-  color: var(--ink-45);
+  color: var(--ink-40);
 }
 
 .status-count {
@@ -250,17 +335,17 @@ button {
 }
 
 .status-dot.pending {
-  background: var(--gold);
+  background: var(--blue);
 }
 
 .status-dot.completed {
-  background: var(--sage);
+  background: var(--green);
 }
 
 /* ---------- Cards / detail ---------- */
 
 .card {
-  background: var(--ivory);
+  background: var(--white);
   border: 1px solid var(--hairline);
   border-radius: 8px;
   padding: 24px;
@@ -277,15 +362,14 @@ button {
 }
 
 .summary-stat .value {
-  font-family: var(--font-serif);
-  font-size: 30px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   line-height: 1;
 }
 
 .summary-stat .label {
   font-size: 12.5px;
-  color: var(--ink-45);
+  color: var(--ink-40);
   margin-top: 4px;
 }
 
@@ -294,17 +378,16 @@ button {
 }
 
 .summary-stat.pending .value {
-  color: var(--gold);
+  color: var(--blue);
 }
 
 .summary-stat.completed .value {
-  color: var(--sage);
+  color: var(--green);
 }
 
 .section-title {
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   margin: 0 0 14px 0;
 }
 
@@ -328,7 +411,7 @@ button {
 }
 
 .task-due {
-  color: var(--ink-45);
+  color: var(--ink-40);
   font-size: 12.5px;
 }
 
@@ -341,8 +424,8 @@ button {
 .field label {
   display: block;
   font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-70);
+  font-weight: 600;
+  color: var(--ink-60);
   margin-bottom: 6px;
 }
 
@@ -355,12 +438,12 @@ button {
   border: 1px solid var(--hairline);
   border-radius: 6px;
   background: #fff;
-  color: var(--navy-deep);
+  color: var(--ink);
 }
 
 .field input:focus,
 .field textarea:focus {
-  outline: 2px solid var(--gold-soft);
+  outline: 2px solid var(--green);
   outline-offset: 1px;
 }
 
@@ -386,11 +469,11 @@ button {
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: var(--ink-45);
+  color: var(--ink-40);
 }
 
 .empty-state .section-title {
-  color: var(--navy-deep);
+  color: var(--ink);
 }
 
 .loading,
@@ -408,17 +491,17 @@ button {
 }
 
 .loading {
-  color: var(--ink-45);
+  color: var(--ink-40);
 }
 
 .back-link {
   display: inline-block;
   font-size: 13px;
-  color: var(--ink-45);
+  color: var(--ink-40);
   text-decoration: none;
   margin-bottom: 12px;
 }
 
 .back-link:hover {
-  color: var(--navy-deep);
+  color: var(--ink);
 }

@@ -10,12 +10,10 @@ export default function PatientDetail() {
   const { patientId } = useParams()
   const [patient, setPatient] = useState(null)
   const [summary, setSummary] = useState(null)
-  const [clinicians, setClinicians] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   const [showForm, setShowForm] = useState(false)
-  const [clinicianId, setClinicianId] = useState('')
   const [condition, setCondition] = useState('')
   const [notes, setNotes] = useState('')
   const [tasks, setTasks] = useState([emptyTask()])
@@ -29,15 +27,12 @@ export default function PatientDetail() {
     setLoading(true)
     setError(null)
     try {
-      const [p, s, c] = await Promise.all([
+      const [p, s] = await Promise.all([
         api.getPatient(patientId),
         api.getContinuitySummary(patientId),
-        api.listClinicians(),
       ])
       setPatient(p)
       setSummary(s)
-      setClinicians(c)
-      if (c.length > 0 && !clinicianId) setClinicianId(c[0].id)
     } catch (err) {
       setError('Could not load this patient. Try refreshing.')
     } finally {
@@ -61,7 +56,6 @@ export default function PatientDetail() {
 
   async function handleCreateConsultation(e) {
     e.preventDefault()
-    if (!clinicianId) return
     setSaving(true)
     setError(null)
     try {
@@ -73,9 +67,10 @@ export default function PatientDetail() {
           requires_clinician_review: t.requires_clinician_review,
         }))
 
+      // clinician_id is no longer sent - the API derives it from the
+      // logged-in clinician's auth token.
       await api.createConsultation({
         patient_id: patientId,
-        clinician_id: clinicianId,
         condition: condition || null,
         notes: notes || null,
         follow_up_tasks: followUpTasks,
@@ -174,34 +169,6 @@ export default function PatientDetail() {
           <h2 className="section-title">New consultation</h2>
           <form onSubmit={handleCreateConsultation}>
             <div className="field">
-              <label>Clinician</label>
-              {clinicians.length === 0 ? (
-                <p className="patient-meta">
-                  No clinicians on file yet — add one via the API first.
-                </p>
-              ) : (
-                <select
-                  value={clinicianId}
-                  onChange={(e) => setClinicianId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: 6,
-                    border: '1px solid var(--hairline)',
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: 14.5,
-                  }}
-                >
-                  {clinicians.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.full_name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div className="field">
               <label>Condition</label>
               <input
                 type="text"
@@ -251,12 +218,7 @@ export default function PatientDetail() {
               </button>
             </div>
 
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={saving || clinicians.length === 0}
-              style={{ marginTop: 8 }}
-            >
+            <button className="btn btn-primary" type="submit" disabled={saving} style={{ marginTop: 8 }}>
               {saving ? 'Saving…' : 'Save consultation'}
             </button>
           </form>
