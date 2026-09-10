@@ -1,10 +1,12 @@
 from typing import List
+from datetime import datetime
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from twilio.twiml.messaging_response import MessagingResponse
 
 from app.database import engine, Base, get_db
 from app import models, schemas
@@ -15,6 +17,7 @@ from app.auth import (
     create_access_token,
     get_current_clinician,
 )
+from app.whatsapp import send_whatsapp_message, normalize_phone, TemplateRequiredError
 
 Base.metadata.create_all(bind=engine)
 
@@ -26,6 +29,9 @@ with engine.connect() as conn:
     conn.execute(text("ALTER TABLE clinicians ADD COLUMN IF NOT EXISTS hashed_password VARCHAR"))
     conn.execute(text("ALTER TABLE clinicians ADD COLUMN IF NOT EXISTS practice_number VARCHAR"))
     conn.execute(text("ALTER TABLE clinicians ADD COLUMN IF NOT EXISTS council VARCHAR"))
+    conn.execute(text("ALTER TABLE follow_up_tasks ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP"))
+    conn.execute(text("ALTER TABLE follow_up_tasks ADD COLUMN IF NOT EXISTS reminder_delivery_status VARCHAR"))
+    conn.execute(text("ALTER TABLE follow_up_tasks ADD COLUMN IF NOT EXISTS patient_response VARCHAR"))
     conn.commit()
 
 app = FastAPI(
@@ -279,3 +285,101 @@ def complete_follow_up_task(
     db.commit()
     db.refresh(task)
     return task
+
+
+# ---------- WhatsApp ----------
+
+@app.post(
+    "/follow-up-tasks/{task_id}/send-reminder",
+    response_model=schemas.FollowUpTaskOut,
+    tags=["whatsapp"],
+)
+def send_follow_up_reminder(
+    task_id: str,
+    db: Session = Depends(get_db),
+    current_clinician: models.Clinician = Depends(get_current_clinician),
+):
+    task = db.query(models.FollowUpTask).filter(models.FollowUpTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Follow-up task not found")
+
+    consultation = db.query(models.Consultation).filter(
+        models.Consultation.id == task.consultation_id
+    ).first()
+    patient = db.query(models.Patient).filter(models.Patient.id == consultation.patient_id).first()
+
+    if not patient or not patient.phone_number:
+        raise HTTPException(status_code=400, detail="This patient has no phone number on file")
+
+    due_text = f" (due {task.due_date.strftime('%d %b')})" if task.due_date else ""
+    message = (
+        f"Hi {patient.full_name.split()[0]}, this is a reminder from FollowApp: "
+        f"'{task.description}'{due_text}.\n\n"
+        f"Reply 1 if this is done or you'll attend as planned, "
+        f"or 2 if you need to reschedule."
+    )
+
+    try:
+        send_whatsapp_message(patient.phone_number, message)
+        task.reminder_delivery_status = "sent"
+    except TemplateRequiredError:
+        # Twilio Sandbox (and any number outside an approved template setup)
+        # blocks business-initiated free text. Record this as a simulated
+        # send so the rest of the workflow (tracking, testing replies) still
+        # works - real delivery needs an approved WhatsApp template/number.
+        task.reminder_delivery_status = "simulated"
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Could not send WhatsApp message: {e}")
+
+    task.reminder_sent_at = datetime.utcnow()
+    db.commit()
+    db.refresh(task)
+    return task
+
+
+@app.post("/whatsapp/webhook", tags=["whatsapp"])
+async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)):
+    """Twilio posts inbound WhatsApp replies here as form-encoded data.
+    No auth - Twilio can't send our JWT, so this endpoint is intentionally public.
+    Matches the sender's phone number to the patient's most recent
+    awaiting-response follow-up task and records their reply."""
+    form = await request.form()
+    from_number = form.get("From", "")
+    body = (form.get("Body") or "").strip()
+
+    incoming_norm = normalize_phone(from_number)
+
+    reply_text = "Thanks for your message. Our team will follow up if needed."
+
+    patients = db.query(models.Patient).all()
+    matched_patient = next(
+        (p for p in patients if p.phone_number and normalize_phone(p.phone_number) == incoming_norm),
+        None,
+    )
+
+    if matched_patient:
+        task = (
+            db.query(models.FollowUpTask)
+            .join(models.Consultation)
+            .filter(
+                models.Consultation.patient_id == matched_patient.id,
+                models.FollowUpTask.reminder_sent_at.isnot(None),
+                models.FollowUpTask.patient_response.is_(None),
+            )
+            .order_by(models.FollowUpTask.reminder_sent_at.desc())
+            .first()
+        )
+        if task:
+            task.patient_response = body
+            db.commit()
+
+            if body.strip() == "1":
+                reply_text = "Thank you for confirming — see you then!"
+            elif body.strip() == "2":
+                reply_text = "Thanks - we've noted you need to reschedule. Our team will contact you."
+            else:
+                reply_text = "Thanks for your reply, we've passed this on to your care team."
+
+    twiml = MessagingResponse()
+    twiml.message(reply_text)
+    return Response(content=str(twiml), media_type="application/xml")

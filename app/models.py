@@ -89,5 +89,8 @@ class FollowUpTask(Base):
     status = Column(Enum(TaskStatus), default=TaskStatus.pending)
     requires_clinician_review = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    reminder_sent_at = Column(DateTime, nullable=True)
+    reminder_delivery_status = Column(String, nullable=True)  # "sent" or "simulated"
+    patient_response = Column(String, nullable=True)
 
     consultation = relationship("Consultation", back_populates="follow_up_tasks")

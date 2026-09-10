@@ -64,6 +64,9 @@ class FollowUpTaskOut(BaseModel):
     status: TaskStatus
     requires_clinician_review: bool
     created_at: datetime
+    reminder_sent_at: Optional[datetime] = None
+    reminder_delivery_status: Optional[str] = None
+    patient_response: Optional[str] = None
 
 
 # ---------- Consultation ----------
