@@ -52,8 +52,10 @@ class Clinician(Base):
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     full_name = Column(String, nullable=False)
-    hpcsa_number = Column(String, nullable=True)
-    email = Column(String, nullable=True)
+    practice_number = Column(String, nullable=True)
+    council = Column(String, nullable=True)  # "HPCSA" or "SANC"
+    email = Column(String, nullable=True, unique=True)
+    hashed_password = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     consultations = relationship("Consultation", back_populates="clinician")

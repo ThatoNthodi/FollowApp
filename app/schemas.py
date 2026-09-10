@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel, ConfigDict
 
 from app.models import TaskStatus
@@ -29,8 +29,10 @@ class PatientOut(BaseModel):
 
 class ClinicianCreate(BaseModel):
     full_name: str
-    hpcsa_number: Optional[str] = None
-    email: Optional[str] = None
+    practice_number: str
+    council: Literal["HPCSA", "SANC"]
+    email: str
+    password: str
 
 
 class ClinicianOut(BaseModel):
@@ -38,7 +40,8 @@ class ClinicianOut(BaseModel):
 
     id: str
     full_name: str
-    hpcsa_number: Optional[str] = None
+    practice_number: Optional[str] = None
+    council: Optional[str] = None
     email: Optional[str] = None
     created_at: datetime
 
@@ -67,7 +70,6 @@ class FollowUpTaskOut(BaseModel):
 
 class ConsultationCreate(BaseModel):
     patient_id: str
-    clinician_id: str
     notes: Optional[str] = None
     condition: Optional[str] = None
     follow_up_tasks: List[FollowUpTaskCreate] = []
@@ -95,3 +97,10 @@ class PatientContinuitySummary(BaseModel):
     overdue: int
     completed: int
     overdue_tasks: List[FollowUpTaskOut] = []
+
+
+# ---------- Auth ----------
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
