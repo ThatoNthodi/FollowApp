@@ -197,6 +197,114 @@ button {
   border-radius: 3px;
 }
 
+/* ---------- Patient portal ---------- */
+
+.portal-screen {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px;
+  background: var(--bg);
+}
+
+.portal-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--white);
+  border-radius: 12px;
+  border: 1px solid var(--hairline);
+  padding: 32px 28px;
+  align-self: flex-start;
+}
+
+.portal-logo {
+  height: 36px;
+  width: auto;
+  margin-bottom: 14px;
+}
+
+.portal-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+}
+
+.portal-subtitle {
+  font-size: 14px;
+  color: var(--ink-40);
+  margin: 0 0 24px 0;
+}
+
+.portal-summary {
+  display: flex;
+  gap: 28px;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.portal-section {
+  margin-bottom: 28px;
+}
+
+.portal-task {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 14.5px;
+}
+
+.portal-task:last-child {
+  border-bottom: none;
+}
+
+.portal-task .status-dot {
+  margin-top: 6px;
+}
+
+.portal-consultation {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.portal-consultation:last-child {
+  border-bottom: none;
+}
+
+.portal-consultation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14.5px;
+  margin-bottom: 6px;
+}
+
+.portal-task-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.portal-task-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--ink-60);
+}
+
+.portal-footnote {
+  font-size: 12.5px;
+  color: var(--ink-40);
+  text-align: center;
+  margin-top: 8px;
+}
+
 /* ---------- Main content ---------- */
 
 .main {

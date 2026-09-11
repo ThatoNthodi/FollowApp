@@ -97,6 +97,25 @@ export default function PatientDetail() {
     }
   }
 
+  async function handleSendReminder(taskId) {
+    try {
+      await api.sendReminder(taskId)
+      await loadAll()
+    } catch {
+      setError('Could not send that reminder.')
+    }
+  }
+
+  const [linkCopied, setLinkCopied] = useState(false)
+
+  function handleCopyPortalLink() {
+    const url = `${window.location.origin}/portal/${patientId}`
+    navigator.clipboard.writeText(url).then(() => {
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    })
+  }
+
   if (loading) return <div className="loading">Loading…</div>
 
   return (
@@ -118,6 +137,14 @@ export default function PatientDetail() {
           </div>
           <button className="btn btn-gold" onClick={() => setShowForm((s) => !s)}>
             {showForm ? 'Cancel' : '+ New consultation'}
+          </button>
+        </div>
+      )}
+
+      {patient && (
+        <div style={{ marginBottom: 20 }}>
+          <button className="btn btn-ghost" onClick={handleCopyPortalLink}>
+            {linkCopied ? 'Link copied!' : "Copy patient's portal link"}
           </button>
         </div>
       )}
@@ -146,19 +173,31 @@ export default function PatientDetail() {
         <div className="card">
           <h2 className="section-title">Overdue tasks</h2>
           {summary.overdue_tasks.map((t) => (
-            <div className="task-row" key={t.id}>
-              <div className="task-desc">
-                <span className="status-dot overdue" />
-                {t.description}
+            <div className="task-row" key={t.id} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div className="task-desc">
+                  <span className="status-dot overdue" />
+                  {t.description}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="task-due">
+                    Due {t.due_date ? new Date(t.due_date).toLocaleDateString() : '—'}
+                  </span>
+                  <button className="btn btn-ghost" onClick={() => handleSendReminder(t.id)}>
+                    {t.reminder_sent_at ? 'Resend reminder' : 'Send reminder'}
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => handleCompleteTask(t.id)}>
+                    Mark complete
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span className="task-due">
-                  Due {t.due_date ? new Date(t.due_date).toLocaleDateString() : '—'}
-                </span>
-                <button className="btn btn-ghost" onClick={() => handleCompleteTask(t.id)}>
-                  Mark complete
-                </button>
-              </div>
+              {t.reminder_sent_at && (
+                <p className="patient-meta" style={{ marginTop: 6 }}>
+                  Reminder sent {new Date(t.reminder_sent_at).toLocaleString()}
+                  {t.reminder_delivery_status === 'simulated' && ' (simulated — sandbox delivery unavailable)'}
+                  {t.patient_response && ` · Patient replied: "${t.patient_response}"`}
+                </p>
+              )}
             </div>
           ))}
         </div>

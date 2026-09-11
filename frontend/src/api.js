@@ -55,4 +55,9 @@ export const api = {
 
   completeFollowUpTask: (taskId) =>
     request(`/follow-up-tasks/${taskId}/complete`, { method: 'PATCH' }),
+
+  sendReminder: (taskId) =>
+    request(`/follow-up-tasks/${taskId}/send-reminder`, { method: 'POST' }),
+
+  getPortalView: (patientId) => request(`/portal/${patientId}`),
 }

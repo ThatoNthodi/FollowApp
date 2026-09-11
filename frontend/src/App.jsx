@@ -3,6 +3,7 @@ import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import PatientsList from './pages/PatientsList.jsx'
 import PatientDetail from './pages/PatientDetail.jsx'
 import Login from './pages/Login.jsx'
+import PatientPortal from './pages/PatientPortal.jsx'
 import { isAuthenticated, clearToken } from './auth.js'
 import { api } from './api.js'
 
@@ -67,6 +68,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/portal/:patientId" element={<PatientPortal />} />
       <Route
         path="/*"
         element={

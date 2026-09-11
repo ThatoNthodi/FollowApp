@@ -107,3 +107,11 @@ class PatientContinuitySummary(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+# ---------- Patient portal (public, read-only) ----------
+
+class PatientPortalView(BaseModel):
+    patient: PatientOut
+    summary: PatientContinuitySummary
+    consultations: List[ConsultationOut] = []

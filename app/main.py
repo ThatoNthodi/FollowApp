@@ -383,3 +383,52 @@ async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)):
     twiml = MessagingResponse()
     twiml.message(reply_text)
     return Response(content=str(twiml), media_type="application/xml")
+
+
+# ---------- Patient portal (public, read-only) ----------
+
+@app.get(
+    "/portal/{patient_id}",
+    response_model=schemas.PatientPortalView,
+    tags=["portal"],
+)
+def get_patient_portal(patient_id: str, db: Session = Depends(get_db)):
+    """Public, unauthenticated, read-only view for a patient's own care plan.
+    Access is via an unguessable link (the patient's UUID) rather than a
+    login - no clinical data can be modified through this endpoint."""
+    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    sync_overdue_tasks(db)
+
+    tasks = (
+        db.query(models.FollowUpTask)
+        .join(models.Consultation)
+        .filter(models.Consultation.patient_id == patient_id)
+        .all()
+    )
+    overdue_tasks = [t for t in tasks if t.status == models.TaskStatus.overdue]
+
+    summary = schemas.PatientContinuitySummary(
+        patient_id=patient.id,
+        full_name=patient.full_name,
+        total_tasks=len(tasks),
+        pending=sum(1 for t in tasks if t.status == models.TaskStatus.pending),
+        overdue=len(overdue_tasks),
+        completed=sum(1 for t in tasks if t.status == models.TaskStatus.completed),
+        overdue_tasks=overdue_tasks,
+    )
+
+    consultations = (
+        db.query(models.Consultation)
+        .filter(models.Consultation.patient_id == patient_id)
+        .order_by(models.Consultation.consultation_date.desc())
+        .all()
+    )
+
+    return schemas.PatientPortalView(
+        patient=patient,
+        summary=summary,
+        consultations=consultations,
+    )
