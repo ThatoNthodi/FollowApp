@@ -2,13 +2,21 @@ import { useEffect, useState } from 'react'
 import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import PatientsList from './pages/PatientsList.jsx'
 import PatientDetail from './pages/PatientDetail.jsx'
-import Login from './pages/Login.jsx'
+import AuthPage from './pages/AuthPage.jsx'
 import PatientPortal from './pages/PatientPortal.jsx'
-import { isAuthenticated, clearToken } from './auth.js'
+import MyPortal from './pages/MyPortal.jsx'
+import { isAuthenticated, getRole, clearToken } from './auth.js'
 import { api } from './api.js'
 
-function RequireAuth({ children }) {
-  if (!isAuthenticated()) {
+function RequireClinician({ children }) {
+  if (!isAuthenticated() || getRole() !== 'clinician') {
+    return <Navigate to="/login" replace />
+  }
+  return children
+}
+
+function RequirePatient({ children }) {
+  if (!isAuthenticated() || getRole() !== 'patient') {
     return <Navigate to="/login" replace />
   }
   return children
@@ -19,7 +27,7 @@ function ClinicianShell() {
   const [clinician, setClinician] = useState(null)
 
   useEffect(() => {
-    api.getMe().then(setClinician).catch(() => {})
+    api.getMe().then((me) => setClinician(me.clinician)).catch(() => {})
   }, [])
 
   function handleLogout() {
@@ -67,14 +75,22 @@ function ClinicianShell() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<AuthPage />} />
       <Route path="/portal/:patientId" element={<PatientPortal />} />
+      <Route
+        path="/my-portal"
+        element={
+          <RequirePatient>
+            <MyPortal />
+          </RequirePatient>
+        }
+      />
       <Route
         path="/*"
         element={
-          <RequireAuth>
+          <RequireClinician>
             <ClinicianShell />
-          </RequireAuth>
+          </RequireClinician>
         }
       />
     </Routes>

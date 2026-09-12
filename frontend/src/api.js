@@ -41,6 +41,36 @@ export const api = {
   },
   getMe: () => request('/auth/me'),
 
+  registerClinician: (data) => {
+    return fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || 'Could not create account')
+      }
+      return res.json()
+    })
+  },
+
+  registerPatient: (data) => {
+    return fetch(`${API_BASE}/auth/register-patient`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || 'Could not create account')
+      }
+      return res.json()
+    })
+  },
+
+  getMyPortal: () => request('/me/portal'),
+
   listPatients: () => request('/patients'),
   getPatient: (id) => request(`/patients/${id}`),
   createPatient: (data) =>

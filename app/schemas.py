@@ -14,6 +14,13 @@ class PatientCreate(BaseModel):
     date_of_birth: Optional[datetime] = None
 
 
+class PatientSignup(BaseModel):
+    full_name: str
+    phone_number: Optional[str] = None
+    email: str
+    password: str
+
+
 class PatientOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -107,6 +114,13 @@ class PatientContinuitySummary(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    role: str
+
+
+class MeResponse(BaseModel):
+    role: str
+    clinician: Optional[ClinicianOut] = None
+    patient: Optional[PatientOut] = None
 
 
 # ---------- Patient portal (public, read-only) ----------

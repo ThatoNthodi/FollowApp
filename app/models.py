@@ -40,7 +40,8 @@ class Patient(Base):
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     full_name = Column(String, nullable=False)
     phone_number = Column(String, nullable=True)  # for WhatsApp integration later
-    email = Column(String, nullable=True)
+    email = Column(String, nullable=True, unique=True)
+    hashed_password = Column(String, nullable=True)
     date_of_birth = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
