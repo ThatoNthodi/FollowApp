@@ -136,3 +136,10 @@ class PatientPortalView(BaseModel):
     patient: PatientOut
     summary: PatientContinuitySummary
     consultations: List[ConsultationOut] = []
+class AIChatRequest(BaseModel):
+    message: str
+
+
+class AIChatResponse(BaseModel):
+    answer: str
+    requires_human_review: bool = False

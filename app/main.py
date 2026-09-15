@@ -23,7 +23,7 @@ from app.auth import (
 )
 import jwt
 from app.whatsapp import send_whatsapp_message, normalize_phone, TemplateRequiredError
-
+from app.ai_service import generate_ai_response
 Base.metadata.create_all(bind=engine)
 
 # Lightweight startup migration: add columns introduced after the initial
@@ -567,4 +567,15 @@ def _build_portal_view(patient_id: str, db: Session) -> schemas.PatientPortalVie
         patient=patient,
         summary=summary,
         consultations=consultations,
+    )
+@app.post("/ai/chat", response_model=schemas.AIChatResponse)
+def ai_chat(
+    payload: schemas.AIChatRequest,
+    current_patient: models.Patient = Depends(get_current_patient),
+):
+    answer = generate_ai_response(payload.message)
+
+    return schemas.AIChatResponse(
+        answer=answer,
+        requires_human_review=False,
     )
