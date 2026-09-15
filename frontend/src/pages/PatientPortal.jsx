@@ -7,6 +7,33 @@ export default function PatientPortal() {
   const [view, setView] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [aiMessage, setAiMessage] = useState('')
+  const [aiResponse, setAiResponse] = useState(null)
+  const [aiLoading, setAiLoading] = useState(false)
+
+  const handleAskAI = async () => {
+    const message = aiMessage.trim()
+
+    if (!message || aiLoading) {
+      return
+    }
+
+    setAiLoading(true)
+    setAiResponse(null)
+
+    try {
+      const response = await api.askAI(message)
+      setAiResponse(response)
+      setAiMessage('')
+    } catch (err) {
+      setAiResponse({
+        answer: 'We could not reach the AI assistant right now. Please try again shortly.',
+        requires_human_review: true,
+      })
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   useEffect(() => {
     api
@@ -113,10 +140,61 @@ export default function PatientPortal() {
           )}
         </div>
 
-        <p className="portal-footnote">
+                <p className="portal-footnote">
           Questions about your care? Contact your clinic directly.
         </p>
+
+        <div className="ai-assistant">
+          <h2 className="ai-assistant-title">Ask FollowApp AI</h2>
+          <p className="ai-assistant-subtitle">
+            Ask general health questions or get help understanding your care.
+          </p>
+
+          {aiResponse && (
+            <div className="ai-chat">
+              <div className="ai-message assistant">
+                {aiResponse.answer}
+              </div>
+
+              {aiResponse.requires_human_review && (
+                <div className="ai-safety-note">
+                  This question may need review by your healthcare professional.
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="ai-input-row">
+            <input
+              type="text"
+              className="ai-input"
+              value={aiMessage}
+              onChange={(e) => setAiMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleAskAI()
+                }
+              }}
+              placeholder="Ask a health question..."
+              disabled={aiLoading}
+            />
+
+            <button
+              type="button"
+              className="ai-button"
+              onClick={handleAskAI}
+              disabled={aiLoading || !aiMessage.trim()}
+            >
+              {aiLoading ? 'Asking…' : 'Ask'}
+            </button>
+          </div>
+
+          <p className="ai-safety-note">
+            FollowApp AI provides general health information and does not
+            replace advice from your healthcare professional.
+          </p>
+        </div>
+       </div>
       </div>
-    </div>
   )
 }

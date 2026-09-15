@@ -92,5 +92,11 @@ export const api = {
   sendReminder: (taskId) =>
     request(`/follow-up-tasks/${taskId}/send-reminder`, { method: 'POST' }),
 
-  getPortalView: (patientId) => request(`/portal/${patientId}`),
+    getPortalView: (patientId) => request(`/portal/${patientId}`),
+
+  askAI: (message) =>
+    request('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
 }
