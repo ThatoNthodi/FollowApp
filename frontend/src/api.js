@@ -71,6 +71,9 @@ export const api = {
 
   getMyPortal: () => request('/me/portal'),
 
+  giveConsent: () =>
+    request('/me/consent', { method: 'POST', body: JSON.stringify({ consent: true }) }),
+
   listPatients: () => request('/patients'),
   getPatient: (id) => request(`/patients/${id}`),
   createPatient: (data) =>

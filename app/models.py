@@ -43,6 +43,9 @@ class Patient(Base):
     email = Column(String, nullable=True, unique=True)
     hashed_password = Column(String, nullable=True)
     date_of_birth = Column(DateTime, nullable=True)
+    consent_given = Column(Boolean, default=False)
+    consent_given_at = Column(DateTime, nullable=True)
+    consent_version = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     consultations = relationship("Consultation", back_populates="patient")

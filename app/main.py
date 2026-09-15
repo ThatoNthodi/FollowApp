@@ -38,7 +38,14 @@ with engine.connect() as conn:
     conn.execute(text("ALTER TABLE follow_up_tasks ADD COLUMN IF NOT EXISTS reminder_delivery_status VARCHAR"))
     conn.execute(text("ALTER TABLE follow_up_tasks ADD COLUMN IF NOT EXISTS patient_response VARCHAR"))
     conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS hashed_password VARCHAR"))
+    conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS consent_given BOOLEAN DEFAULT FALSE"))
+    conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS consent_given_at TIMESTAMP"))
+    conn.execute(text("ALTER TABLE patients ADD COLUMN IF NOT EXISTS consent_version VARCHAR"))
     conn.commit()
+
+# Bump this when the consent text materially changes - patients who consented
+# to an older version will be prompted to consent again.
+CONSENT_VERSION = "1.0"
 
 app = FastAPI(
     title="FollowApp API",
@@ -111,6 +118,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @app.post("/auth/register-patient", response_model=schemas.PatientOut, tags=["auth"])
 def register_patient(signup: schemas.PatientSignup, db: Session = Depends(get_db)):
+    if not signup.consent:
+        raise HTTPException(
+            status_code=400,
+            detail="You must consent to your personal and health information being processed (POPIA) to create an account.",
+        )
+
     # Only a genuine duplicate (an account that already has a password set)
     # should be rejected - a clinician may have already created a bare
     # record for this patient (by email or phone) with no password yet.
@@ -141,6 +154,9 @@ def register_patient(signup: schemas.PatientSignup, db: Session = Depends(get_db
         if signup.phone_number:
             linked_patient.phone_number = signup.phone_number
         linked_patient.hashed_password = hash_password(signup.password)
+        linked_patient.consent_given = True
+        linked_patient.consent_given_at = datetime.utcnow()
+        linked_patient.consent_version = CONSENT_VERSION
         db.commit()
         db.refresh(linked_patient)
         return linked_patient
@@ -150,6 +166,9 @@ def register_patient(signup: schemas.PatientSignup, db: Session = Depends(get_db
         phone_number=signup.phone_number,
         email=signup.email,
         hashed_password=hash_password(signup.password),
+        consent_given=True,
+        consent_given_at=datetime.utcnow(),
+        consent_version=CONSENT_VERSION,
     )
     db.add(db_patient)
     db.commit()
@@ -480,6 +499,23 @@ def get_my_portal(
     """Authenticated patient's own care plan - scoped to their token, not a
     URL parameter, so a patient can never view anyone else's data."""
     return _build_portal_view(current_patient.id, db)
+
+
+@app.post("/me/consent", response_model=schemas.PatientOut, tags=["portal"])
+def give_consent(
+    payload: schemas.ConsentUpdate,
+    db: Session = Depends(get_db),
+    current_patient: models.Patient = Depends(get_current_patient),
+):
+    """Records (or withdraws) POPIA consent for the logged-in patient.
+    Used for accounts created before consent tracking existed, or when a
+    patient needs to re-consent after the consent text changes."""
+    current_patient.consent_given = payload.consent
+    current_patient.consent_given_at = datetime.utcnow() if payload.consent else None
+    current_patient.consent_version = CONSENT_VERSION if payload.consent else None
+    db.commit()
+    db.refresh(current_patient)
+    return current_patient
 
 
 @app.get(

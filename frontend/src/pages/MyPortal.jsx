@@ -8,6 +8,8 @@ export default function MyPortal() {
   const [view, setView] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [consentChecked, setConsentChecked] = useState(false)
+  const [consenting, setConsenting] = useState(false)
 
   useEffect(() => {
     api
@@ -24,6 +26,19 @@ export default function MyPortal() {
   function handleLogout() {
     clearToken()
     navigate('/login')
+  }
+
+  async function handleGiveConsent() {
+    setConsenting(true)
+    try {
+      await api.giveConsent()
+      const fresh = await api.getMyPortal()
+      setView(fresh)
+    } catch {
+      setError('Could not save your consent. Please try again.')
+    } finally {
+      setConsenting(false)
+    }
   }
 
   if (loading) {
@@ -51,6 +66,38 @@ export default function MyPortal() {
 
   const { patient, summary, consultations } = view
   const firstName = patient.full_name.split(' ')[0]
+
+  if (!patient.consent_given) {
+    return (
+      <div className="portal-screen">
+        <div className="portal-card">
+          <img src="/logo-icon.png" alt="" className="portal-logo" />
+          <h1 className="portal-title">Before you continue</h1>
+          <p className="portal-subtitle">
+            We need your consent to show your care information here.
+          </p>
+          <label className="consent-check">
+            <input type="checkbox" checked={consentChecked} onChange={(e) => setConsentChecked(e.target.checked)} />
+            <span>
+              I consent to FollowApp processing my personal and health information,
+              in accordance with POPIA, for the purpose of coordinating my healthcare.
+            </span>
+          </label>
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%' }}
+            disabled={!consentChecked || consenting}
+            onClick={handleGiveConsent}
+          >
+            {consenting ? 'Saving…' : 'I agree, continue'}
+          </button>
+          <button className="btn btn-ghost" onClick={handleLogout} style={{ width: '100%', marginTop: 8 }}>
+            Log out
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="portal-screen">

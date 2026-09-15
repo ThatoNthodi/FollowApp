@@ -21,6 +21,7 @@ export default function AuthPage() {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [practiceNumber, setPracticeNumber] = useState('')
   const [council, setCouncil] = useState('HPCSA')
+  const [consent, setConsent] = useState(false)
 
   function resetMessages() {
     setError(null)
@@ -51,11 +52,17 @@ export default function AuthPage() {
     setLoading(true)
     try {
       if (signupRole === 'patient') {
+        if (!consent) {
+          setError('Please confirm you consent to your information being processed to continue.')
+          setLoading(false)
+          return
+        }
         await api.registerPatient({
           full_name: fullName,
           phone_number: phoneNumber || null,
           email,
           password,
+          consent: true,
         })
       } else {
         await api.registerClinician({
@@ -69,6 +76,7 @@ export default function AuthPage() {
       setSuccess('Account created — you can now sign in.')
       setMode('signin')
       setPassword('')
+      setConsent(false)
     } catch (err) {
       setError(err.message || 'Could not create that account.')
     } finally {
@@ -207,6 +215,20 @@ export default function AuthPage() {
                 required
               />
             </div>
+
+            {signupRole === 'patient' && (
+              <label className="consent-check">
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(e) => setConsent(e.target.checked)}
+                />
+                <span>
+                  I consent to FollowApp processing my personal and health information,
+                  in accordance with POPIA, for the purpose of coordinating my healthcare.
+                </span>
+              </label>
+            )}
 
             <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%' }}>
               {loading ? 'Creating account…' : 'Create account'}

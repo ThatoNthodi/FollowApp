@@ -19,6 +19,7 @@ class PatientSignup(BaseModel):
     phone_number: Optional[str] = None
     email: str
     password: str
+    consent: bool
 
 
 class PatientOut(BaseModel):
@@ -29,7 +30,13 @@ class PatientOut(BaseModel):
     phone_number: Optional[str] = None
     email: Optional[str] = None
     date_of_birth: Optional[datetime] = None
+    consent_given: bool = False
+    consent_given_at: Optional[datetime] = None
     created_at: datetime
+
+
+class ConsentUpdate(BaseModel):
+    consent: bool
 
 
 # ---------- Clinician ----------
