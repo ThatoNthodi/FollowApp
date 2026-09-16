@@ -23,7 +23,8 @@ from app.auth import (
 )
 import jwt
 from app.whatsapp import send_whatsapp_message, normalize_phone, TemplateRequiredError
-from app.ai_service import generate_ai_response
+from app.ai_service import generate_ai_response, build_patient_context
+from app.ai_safety import assess_ai_safety
 Base.metadata.create_all(bind=engine)
 
 # Lightweight startup migration: add columns introduced after the initial
@@ -572,8 +573,46 @@ def _build_portal_view(patient_id: str, db: Session) -> schemas.PatientPortalVie
 def ai_chat(
     payload: schemas.AIChatRequest,
     current_patient: models.Patient = Depends(get_current_patient),
+    db: Session = Depends(get_db),
 ):
-    answer = generate_ai_response(payload.message)
+    safety = assess_ai_safety(payload.message)
+
+    if not safety["safe_to_answer"]:
+        if safety["category"] == "possible_emergency":
+            answer = (
+                "Your message may describe a medical emergency. "
+                "Please seek urgent medical attention or contact your local "
+                "emergency service. FollowApp AI cannot assess or manage "
+                "emergencies."
+            )
+        elif safety["category"] == "medication_change":
+            answer = (
+                "FollowApp AI cannot tell you to start, stop, or change "
+                "a medication or its dose. Please contact your healthcare "
+                "professional before making changes to your treatment."
+            )
+        elif safety["category"] == "diagnosis_request":
+            answer = (
+                "FollowApp AI cannot diagnose a medical condition. "
+                "A qualified healthcare professional should assess your "
+                "symptoms, medical history, and any necessary tests."
+            )
+        else:
+            answer = (
+                "This question needs to be reviewed by a healthcare professional."
+            )
+
+        return schemas.AIChatResponse(
+            answer=answer,
+            requires_human_review=safety["requires_human_review"],
+        )
+
+    patient_context = build_patient_context(current_patient)
+
+    answer = generate_ai_response(
+        payload.message,
+        patient_context=patient_context,
+    )
 
     return schemas.AIChatResponse(
         answer=answer,

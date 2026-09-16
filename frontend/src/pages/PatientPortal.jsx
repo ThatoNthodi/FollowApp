@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
 import { api } from '../api.js'
 
 export default function PatientPortal() {
-  const { patientId } = useParams()
   const [view, setView] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -37,7 +35,7 @@ export default function PatientPortal() {
 
   useEffect(() => {
     api
-      .getPortalView(patientId)
+      .getMyPortal()
       .then(setView)
       .catch(() =>
         setError(
@@ -45,7 +43,7 @@ export default function PatientPortal() {
         ),
       )
       .finally(() => setLoading(false))
-  }, [patientId])
+  }, [])
 
   if (loading) {
     return (
