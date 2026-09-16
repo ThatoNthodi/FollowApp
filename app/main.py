@@ -25,6 +25,7 @@ from app.auth import (
 import jwt
 from app.whatsapp import send_whatsapp_message, normalize_phone, TemplateRequiredError
 from app.ai_service import generate_ai_response, build_patient_context
+from app.email_service import send_feedback_notification
 from app.ai_safety import assess_ai_safety
 Base.metadata.create_all(bind=engine)
 
@@ -637,5 +638,12 @@ def submit_feedback(
     db.add(feedback)
     db.commit()
     db.refresh(feedback)
+
+    try:
+        send_feedback_notification(role, user_id, payload.message)
+    except Exception:
+        # Notification email is a convenience only - never let a failure
+        # here affect the feedback submission itself.
+        pass
 
     return feedback
