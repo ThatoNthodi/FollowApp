@@ -143,3 +143,17 @@ class AIChatRequest(BaseModel):
 class AIChatResponse(BaseModel):
     answer: str
     requires_human_review: bool = False
+
+
+class FeedbackCreate(BaseModel):
+    message: str
+
+
+class FeedbackOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    user_id: Optional[str] = None
+    user_role: Optional[str] = None
+    message: str
+    created_at: datetime

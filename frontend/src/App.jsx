@@ -5,6 +5,7 @@ import PatientDetail from './pages/PatientDetail.jsx'
 import AuthPage from './pages/AuthPage.jsx'
 import PatientPortal from './pages/PatientPortal.jsx'
 import MyPortal from './pages/MyPortal.jsx'
+import FeedbackWidget from './components/FeedbackWidget.jsx'
 import { isAuthenticated, getRole, clearToken } from './auth.js'
 import { api } from './api.js'
 
@@ -68,6 +69,8 @@ function ClinicianShell() {
           <Route path="/patients/:patientId" element={<PatientDetail />} />
         </Routes>
       </main>
+
+      <FeedbackWidget />
     </div>
   )
 }

@@ -98,3 +98,15 @@ class FollowUpTask(Base):
     patient_response = Column(String, nullable=True)
 
     consultation = relationship("Consultation", back_populates="follow_up_tasks")
+
+
+class Feedback(Base):
+    """Free-text feedback submitted by a patient or clinician while testing the app."""
+
+    __tablename__ = "feedback"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id = Column(UUID(as_uuid=False), nullable=True)
+    user_role = Column(String, nullable=True)  # "patient" | "clinician" | "anonymous"
+    message = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

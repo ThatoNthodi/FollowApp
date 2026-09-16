@@ -17,6 +17,7 @@ from app.auth import (
     create_access_token,
     get_current_clinician,
     get_current_patient,
+    get_current_user_any_role,
     oauth2_scheme,
     SECRET_KEY,
     ALGORITHM,
@@ -618,3 +619,23 @@ def ai_chat(
         answer=answer,
         requires_human_review=False,
     )
+
+
+@app.post("/feedback", response_model=schemas.FeedbackOut)
+def submit_feedback(
+    payload: schemas.FeedbackCreate,
+    current_user=Depends(get_current_user_any_role),
+    db: Session = Depends(get_db),
+):
+    user_id, role = current_user
+
+    feedback = models.Feedback(
+        user_id=user_id,
+        user_role=role,
+        message=payload.message,
+    )
+    db.add(feedback)
+    db.commit()
+    db.refresh(feedback)
+
+    return feedback

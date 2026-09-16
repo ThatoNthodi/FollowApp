@@ -82,3 +82,36 @@ def get_current_patient(
     if patient is None:
         raise credentials_error
     return patient
+
+
+optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
+
+
+def get_current_user_any_role(
+    token: Optional[str] = Depends(optional_oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    """
+    Returns (user_id, role) for whichever role the token belongs to.
+    If no token is provided, returns (None, "anonymous") rather than
+    rejecting the request. If a token IS provided but is invalid or
+    expired, the request is still rejected.
+    """
+    if token is None:
+        return None, "anonymous"
+
+    credentials_error = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        role = payload.get("role")
+        if user_id is None or role not in ("patient", "clinician"):
+            raise credentials_error
+    except jwt.PyJWTError:
+        raise credentials_error
+
+    return user_id, role

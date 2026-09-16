@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api.js'
 import { clearToken } from '../auth.js'
+import FeedbackWidget from '../components/FeedbackWidget.jsx'
 
 export default function MyPortal() {
   const navigate = useNavigate()
@@ -254,6 +255,8 @@ export default function MyPortal() {
           Questions about your care? Contact your clinic directly.
         </p>
       </div>
+
+      <FeedbackWidget />
     </div>
   )
 }

@@ -99,4 +99,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ message }),
     }),
+
+  submitFeedback: (message) =>
+    request('/feedback', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
 }
