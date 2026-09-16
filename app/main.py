@@ -222,7 +222,13 @@ def list_patients(
     db: Session = Depends(get_db),
     current_clinician: models.Clinician = Depends(get_current_clinician),
 ):
-    return db.query(models.Patient).all()
+    return (
+        db.query(models.Patient)
+        .join(models.Consultation)
+        .filter(models.Consultation.clinician_id == current_clinician.id)
+        .distinct()
+        .all()
+    )
 
 
 @app.get("/patients/{patient_id}", response_model=schemas.PatientOut, tags=["patients"])
@@ -231,7 +237,16 @@ def get_patient(
     db: Session = Depends(get_db),
     current_clinician: models.Clinician = Depends(get_current_clinician),
 ):
-    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
+    patient = (
+        db.query(models.Patient)
+        .join(models.Consultation)
+        .filter(
+            models.Patient.id == patient_id,
+            models.Consultation.clinician_id == current_clinician.id,
+        )
+        .distinct()
+        .first()
+    )
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
     return patient
@@ -298,7 +313,11 @@ def list_consultations(
     db: Session = Depends(get_db),
     current_clinician: models.Clinician = Depends(get_current_clinician),
 ):
-    return db.query(models.Consultation).all()
+    return (
+        db.query(models.Consultation)
+        .filter(models.Consultation.clinician_id == current_clinician.id)
+        .all()
+    )
 
 
 @app.get("/consultations/{consultation_id}", response_model=schemas.ConsultationOut, tags=["consultations"])
@@ -307,7 +326,14 @@ def get_consultation(
     db: Session = Depends(get_db),
     current_clinician: models.Clinician = Depends(get_current_clinician),
 ):
-    consultation = db.query(models.Consultation).filter(models.Consultation.id == consultation_id).first()
+    consultation = (
+        db.query(models.Consultation)
+        .filter(
+            models.Consultation.id == consultation_id,
+            models.Consultation.clinician_id == current_clinician.id,
+        )
+        .first()
+    )
     if not consultation:
         raise HTTPException(status_code=404, detail="Consultation not found")
     return consultation
@@ -321,7 +347,12 @@ def list_follow_up_tasks(
     current_clinician: models.Clinician = Depends(get_current_clinician),
 ):
     sync_overdue_tasks(db)
-    return db.query(models.FollowUpTask).all()
+    return (
+        db.query(models.FollowUpTask)
+        .join(models.Consultation)
+        .filter(models.Consultation.clinician_id == current_clinician.id)
+        .all()
+    )
 
 
 @app.get("/follow-up-tasks/overdue", response_model=List[schemas.FollowUpTaskOut], tags=["follow-up-tasks"])
@@ -333,7 +364,11 @@ def list_overdue_follow_up_tasks(
     sync_overdue_tasks(db)
     return (
         db.query(models.FollowUpTask)
-        .filter(models.FollowUpTask.status == models.TaskStatus.overdue)
+        .join(models.Consultation)
+        .filter(
+            models.FollowUpTask.status == models.TaskStatus.overdue,
+            models.Consultation.clinician_id == current_clinician.id,
+        )
         .all()
     )
 
@@ -349,7 +384,16 @@ def get_patient_continuity_summary(
     current_clinician: models.Clinician = Depends(get_current_clinician),
 ):
     """Outstanding care tasks for one patient, across all their consultations."""
-    patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
+    patient = (
+        db.query(models.Patient)
+        .join(models.Consultation)
+        .filter(
+            models.Patient.id == patient_id,
+            models.Consultation.clinician_id == current_clinician.id,
+        )
+        .distinct()
+        .first()
+    )
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
