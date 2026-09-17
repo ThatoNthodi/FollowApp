@@ -3,6 +3,7 @@ import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import PatientsList from './pages/PatientsList.jsx'
 import PatientDetail from './pages/PatientDetail.jsx'
 import AuthPage from './pages/AuthPage.jsx'
+import PrivacyEthicsFAQ from './pages/PrivacyEthicsFAQ.jsx'
 import PatientPortal from './pages/PatientPortal.jsx'
 import MyPortal from './pages/MyPortal.jsx'
 import FeedbackWidget from './components/FeedbackWidget.jsx'
@@ -79,6 +80,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<AuthPage />} />
+      <Route path="/privacy-ethics" element={<PrivacyEthicsFAQ />} />
       <Route path="/portal/:patientId" element={<PatientPortal />} />
       <Route
         path="/my-portal"

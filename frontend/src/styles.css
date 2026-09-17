@@ -1262,3 +1262,66 @@ button {
   font-weight: 500;
   margin: 4px 0 0;
 }
+
+/* Privacy & Ethics FAQ page */
+.faq-page {
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 48px 24px;
+  font-family: var(--font-sans);
+}
+
+.faq-page-inner {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.faq-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--blue);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-bottom: 32px;
+}
+
+.faq-back-link:hover {
+  text-decoration: underline;
+}
+
+.faq-page h1 {
+  font-size: 28px;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.faq-page-intro {
+  color: var(--ink-60);
+  font-size: 14.5px;
+  line-height: 1.6;
+  margin: 0 0 36px;
+}
+
+.faq-item {
+  padding: 20px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.faq-item h2 {
+  font-size: 16px;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+
+.faq-item p {
+  color: var(--ink-60);
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 0 0 10px;
+}
+
+.faq-item p:last-child {
+  margin-bottom: 0;
+}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, User, Phone, ShieldCheck, Activity } from 'lucide-react'
 import { api } from '../api.js'
 import { setToken, setRole } from '../auth.js'
@@ -355,7 +355,7 @@ export default function AuthPage() {
             <ShieldCheck size={18} />
             <span>
               Your information is secure and private. FollowApp protects your data in line
-              with POPIA.
+              with POPIA. <Link to="/privacy-ethics">Learn how</Link>.
             </span>
           </div>
         </div>
