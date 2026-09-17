@@ -157,7 +157,11 @@ button {
   justify-content: center;
   gap: 22px;
   padding: 64px 64px 72px;
-  background: linear-gradient(200deg, var(--blue-deep) 0%, var(--green-deep) 100%);
+  background:
+    linear-gradient(200deg, rgba(18, 58, 102, 0.88) 0%, rgba(31, 122, 82, 0.82) 100%),
+    url('/auth-hero-bg.jpg');
+  background-size: cover;
+  background-position: center;
   color: var(--white);
   overflow: hidden;
 }
