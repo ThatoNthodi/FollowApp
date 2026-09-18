@@ -61,7 +61,9 @@ app = FastAPI(
 # CORS - tighten allow_origins before production use
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://follow-app-five.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
