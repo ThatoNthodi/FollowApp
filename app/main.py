@@ -648,6 +648,16 @@ def ai_chat(
                 "This question needs to be reviewed by a healthcare professional."
             )
 
+        conversation = models.AIConversation(
+            patient_id=current_patient.id,
+            message=payload.message,
+            answer=answer,
+            category=safety["category"],
+            requires_human_review=safety["requires_human_review"],
+        )
+        db.add(conversation)
+        db.commit()
+
         return schemas.AIChatResponse(
             answer=answer,
             requires_human_review=safety["requires_human_review"],
@@ -660,10 +670,76 @@ def ai_chat(
         patient_context=patient_context,
     )
 
+    conversation = models.AIConversation(
+        patient_id=current_patient.id,
+        message=payload.message,
+        answer=answer,
+        category=safety["category"],
+        requires_human_review=False,
+    )
+    db.add(conversation)
+    db.commit()
+
     return schemas.AIChatResponse(
         answer=answer,
         requires_human_review=False,
     )
+
+
+@app.get(
+    "/ai/conversations/flagged",
+    response_model=List[schemas.AIConversationOut],
+    tags=["ai"],
+)
+def list_flagged_ai_conversations(
+    db: Session = Depends(get_db),
+    current_clinician: models.Clinician = Depends(get_current_clinician),
+):
+    """Conversations flagged for human review, for patients this clinician
+    has actually consulted with (same scoping as /patients)."""
+    return (
+        db.query(models.AIConversation)
+        .join(models.Patient)
+        .join(models.Consultation, models.Consultation.patient_id == models.Patient.id)
+        .filter(
+            models.Consultation.clinician_id == current_clinician.id,
+            models.AIConversation.requires_human_review == True,  # noqa: E712
+        )
+        .distinct()
+        .order_by(models.AIConversation.created_at.desc())
+        .all()
+    )
+
+
+@app.post(
+    "/ai/conversations/{conversation_id}/review",
+    response_model=schemas.AIConversationOut,
+    tags=["ai"],
+)
+def mark_ai_conversation_reviewed(
+    conversation_id: str,
+    db: Session = Depends(get_db),
+    current_clinician: models.Clinician = Depends(get_current_clinician),
+):
+    conversation = (
+        db.query(models.AIConversation)
+        .join(models.Patient)
+        .join(models.Consultation, models.Consultation.patient_id == models.Patient.id)
+        .filter(
+            models.AIConversation.id == conversation_id,
+            models.Consultation.clinician_id == current_clinician.id,
+        )
+        .distinct()
+        .first()
+    )
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    conversation.reviewed_at = datetime.utcnow()
+    conversation.reviewed_by_clinician_id = current_clinician.id
+    db.commit()
+    db.refresh(conversation)
+    return conversation
 
 
 @app.post("/feedback", response_model=schemas.FeedbackOut)

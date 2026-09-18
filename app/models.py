@@ -100,6 +100,27 @@ class FollowUpTask(Base):
     consultation = relationship("Consultation", back_populates="follow_up_tasks")
 
 
+class AIConversation(Base):
+    """A single AI-assistant exchange with a patient, kept for clinical
+    audit and so a clinician can review anything flagged for human review
+    (possible emergency, medication-change request, diagnosis request)."""
+
+    __tablename__ = "ai_conversations"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
+    message = Column(Text, nullable=False)
+    answer = Column(Text, nullable=False)
+    category = Column(String, nullable=False)  # e.g. "general_information", "possible_emergency"
+    requires_human_review = Column(Boolean, default=False)
+    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_by_clinician_id = Column(UUID(as_uuid=False), ForeignKey("clinicians.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    patient = relationship("Patient")
+    reviewed_by = relationship("Clinician")
+
+
 class Feedback(Base):
     """Free-text feedback submitted by a patient or clinician while testing the app."""
 

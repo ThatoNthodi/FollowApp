@@ -145,6 +145,21 @@ class AIChatResponse(BaseModel):
     requires_human_review: bool = False
 
 
+class AIConversationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    patient_id: str
+    patient: Optional[PatientOut] = None
+    message: str
+    answer: str
+    category: str
+    requires_human_review: bool
+    reviewed_at: Optional[datetime] = None
+    reviewed_by_clinician_id: Optional[str] = None
+    created_at: datetime
+
+
 class FeedbackCreate(BaseModel):
     message: str
 
