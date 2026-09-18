@@ -11,6 +11,8 @@ export default function MyPortal() {
   const [error, setError] = useState(null)
   const [consentChecked, setConsentChecked] = useState(false)
   const [consenting, setConsenting] = useState(false)
+  const [withdrawing, setWithdrawing] = useState(false)
+  const [consentStatus, setConsentStatus] = useState(null)
   const [aiMessage, setAiMessage] = useState('')
   const [aiResponse, setAiResponse] = useState(null)
   const [aiLoading, setAiLoading] = useState(false)
@@ -39,16 +41,60 @@ export default function MyPortal() {
       setAiLoading(false)
     }
   }
+
+  async function handleWithdrawConsent() {
+    const confirmed = window.confirm(
+      'Are you sure you want to withdraw your consent? Your FollowApp patient portal and AI assistant will no longer be available until you consent again.',
+    )
+
+    if (!confirmed || withdrawing) {
+      return
+    }
+
+    setWithdrawing(true)
+    setError(null)
+
+    try {
+      await api.withdrawConsent()
+      setConsentStatus(false)
+      setView(null)
+      setAiResponse(null)
+      setAiMessage('')
+    } catch {
+      setError('Could not withdraw your consent. Please try again.')
+    } finally {
+      setWithdrawing(false)
+    }
+  }
+
   useEffect(() => {
-    api
-      .getMyPortal()
-      .then(setView)
-      .catch(() =>
+    async function loadPortal() {
+      try {
+        const me = await api.getMe()
+
+        if (me.role !== 'patient' || !me.patient) {
+          throw new Error('Invalid patient session')
+        }
+
+        setConsentStatus(me.patient.consent_given)
+
+        if (!me.patient.consent_given) {
+          setLoading(false)
+          return
+        }
+
+        const portal = await api.getMyPortal()
+        setView(portal)
+      } catch {
         setError(
-          'We could not load your care plan right now. Please try again shortly.',
-        ),
-      )
-      .finally(() => setLoading(false))
+          'We could not load your care information right now. Please try again shortly.',
+        )
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadPortal()
   }, [])
 
   function handleLogout() {
@@ -79,7 +125,7 @@ export default function MyPortal() {
     )
   }
 
-  if (error || !view) {
+  if (error) {
     return (
       <div className="portal-screen">
         <div className="portal-card">
@@ -92,10 +138,7 @@ export default function MyPortal() {
     )
   }
 
-  const { patient, summary, consultations } = view
-  const firstName = patient.full_name.split(' ')[0]
-
-  if (!patient.consent_given) {
+  if (consentStatus === false) {
     return (
       <div className="portal-screen">
         <div className="portal-card">
@@ -127,6 +170,9 @@ export default function MyPortal() {
     )
   }
 
+  const { patient, summary, consultations } = view
+  const firstName = patient.full_name.split(' ')[0]
+
   return (
     <div className="portal-screen">
       <div className="portal-card">
@@ -134,6 +180,21 @@ export default function MyPortal() {
           <img src="/logo-icon.png" alt="" className="portal-logo" />
           <button className="btn btn-ghost" onClick={handleLogout}>
             Log out
+          </button>
+        </div>
+        <div className="portal-section">
+          <h2 className="section-title">Privacy & consent</h2>
+          <p className="patient-meta">
+            You have currently consented to FollowApp processing your personal
+            and health information for healthcare coordination.
+          </p>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={handleWithdrawConsent}
+            disabled={withdrawing}
+          >
+            {withdrawing ? 'Withdrawing…' : 'Withdraw consent'}
           </button>
         </div>
         <h1 className="portal-title">Hi {firstName}</h1>

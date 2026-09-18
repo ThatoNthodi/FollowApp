@@ -69,10 +69,15 @@ export const api = {
     })
   },
 
+  getMe: () => request('/auth/me'),
+
   getMyPortal: () => request('/me/portal'),
 
   giveConsent: () =>
     request('/me/consent', { method: 'POST', body: JSON.stringify({ consent: true }) }),
+
+  withdrawConsent: () =>
+    request('/me/consent', { method: 'POST', body: JSON.stringify({ consent: false }) }),
 
   listPatients: () => request('/patients'),
   getPatient: (id) => request(`/patients/${id}`),
