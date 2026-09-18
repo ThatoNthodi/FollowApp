@@ -57,7 +57,15 @@ class ClinicianOut(BaseModel):
     practice_number: Optional[str] = None
     council: Optional[str] = None
     email: Optional[str] = None
+    is_admin: bool = False
     created_at: datetime
+
+
+class ClinicianActivityOut(ClinicianOut):
+    patient_count: int
+    consultation_count: int
+    overdue_task_count: int
+    completed_task_count: int
 
 
 # ---------- Follow-up task ----------

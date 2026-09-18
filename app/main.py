@@ -16,6 +16,7 @@ from app.auth import (
     verify_password,
     create_access_token,
     get_current_clinician,
+    get_current_admin,
     get_current_patient,
     get_current_user_any_role,
     oauth2_scheme,
@@ -272,6 +273,126 @@ def get_clinician(
     clinician = db.query(models.Clinician).filter(models.Clinician.id == clinician_id).first()
     if not clinician:
         raise HTTPException(status_code=404, detail="Clinician not found")
+    return clinician
+
+
+# ---------- Practice admin ----------
+# Everything below is admin-only (get_current_admin). Not tenant-scoped -
+# real multi-practice separation is a later, deliberately deferred item
+# (see the build plan), so for now this covers the whole system.
+
+@app.get(
+    "/admin/clinicians",
+    response_model=List[schemas.ClinicianActivityOut],
+    tags=["admin"],
+)
+def admin_list_clinicians(
+    db: Session = Depends(get_db),
+    current_admin: models.Clinician = Depends(get_current_admin),
+):
+    clinicians = db.query(models.Clinician).all()
+    results = []
+
+    for clinician in clinicians:
+        patient_count = (
+            db.query(models.Patient.id)
+            .join(models.Consultation)
+            .filter(models.Consultation.clinician_id == clinician.id)
+            .distinct()
+            .count()
+        )
+        consultation_count = (
+            db.query(models.Consultation)
+            .filter(models.Consultation.clinician_id == clinician.id)
+            .count()
+        )
+        overdue_task_count = (
+            db.query(models.FollowUpTask)
+            .join(models.Consultation)
+            .filter(
+                models.Consultation.clinician_id == clinician.id,
+                models.FollowUpTask.status == models.TaskStatus.overdue,
+            )
+            .count()
+        )
+        completed_task_count = (
+            db.query(models.FollowUpTask)
+            .join(models.Consultation)
+            .filter(
+                models.Consultation.clinician_id == clinician.id,
+                models.FollowUpTask.status == models.TaskStatus.completed,
+            )
+            .count()
+        )
+
+        results.append(
+            schemas.ClinicianActivityOut(
+                id=clinician.id,
+                full_name=clinician.full_name,
+                practice_number=clinician.practice_number,
+                council=clinician.council,
+                email=clinician.email,
+                is_admin=clinician.is_admin,
+                created_at=clinician.created_at,
+                patient_count=patient_count,
+                consultation_count=consultation_count,
+                overdue_task_count=overdue_task_count,
+                completed_task_count=completed_task_count,
+            )
+        )
+
+    return results
+
+
+@app.post(
+    "/admin/clinicians/{clinician_id}/promote",
+    response_model=schemas.ClinicianOut,
+    tags=["admin"],
+)
+def admin_promote_clinician(
+    clinician_id: str,
+    db: Session = Depends(get_db),
+    current_admin: models.Clinician = Depends(get_current_admin),
+):
+    clinician = db.query(models.Clinician).filter(models.Clinician.id == clinician_id).first()
+    if not clinician:
+        raise HTTPException(status_code=404, detail="Clinician not found")
+
+    clinician.is_admin = True
+    db.commit()
+    db.refresh(clinician)
+    return clinician
+
+
+@app.post(
+    "/admin/clinicians/{clinician_id}/demote",
+    response_model=schemas.ClinicianOut,
+    tags=["admin"],
+)
+def admin_demote_clinician(
+    clinician_id: str,
+    db: Session = Depends(get_db),
+    current_admin: models.Clinician = Depends(get_current_admin),
+):
+    clinician = db.query(models.Clinician).filter(models.Clinician.id == clinician_id).first()
+    if not clinician:
+        raise HTTPException(status_code=404, detail="Clinician not found")
+
+    if clinician.id == current_admin.id:
+        remaining_admins = (
+            db.query(models.Clinician)
+            .filter(models.Clinician.is_admin == True, models.Clinician.id != clinician.id)  # noqa: E712
+            .count()
+        )
+        if remaining_admins == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot remove the last remaining admin",
+            )
+
+    clinician.is_admin = False
+    db.commit()
+    db.refresh(clinician)
     return clinician
 
 
