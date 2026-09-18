@@ -61,6 +61,21 @@ def get_current_clinician(
     return clinician
 
 
+def get_current_admin(
+    current_clinician: models.Clinician = Depends(get_current_clinician),
+) -> models.Clinician:
+    """Same as get_current_clinician, but 403s if the clinician isn't a
+    practice admin. Built on top of get_current_clinician rather than
+    duplicating the token-decoding logic, so a clinician must first pass
+    normal authentication before the admin check even runs."""
+    if not current_clinician.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_clinician
+
+
 def get_current_patient(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> models.Patient:

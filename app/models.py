@@ -60,6 +60,7 @@ class Clinician(Base):
     council = Column(String, nullable=True)  # "HPCSA" or "SANC"
     email = Column(String, nullable=True, unique=True)
     hashed_password = Column(String, nullable=True)
+    is_admin = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     consultations = relationship("Consultation", back_populates="clinician")

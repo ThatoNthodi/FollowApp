@@ -37,6 +37,7 @@ with engine.connect() as conn:
     conn.execute(text("ALTER TABLE clinicians ADD COLUMN IF NOT EXISTS hashed_password VARCHAR"))
     conn.execute(text("ALTER TABLE clinicians ADD COLUMN IF NOT EXISTS practice_number VARCHAR"))
     conn.execute(text("ALTER TABLE clinicians ADD COLUMN IF NOT EXISTS council VARCHAR"))
+    conn.execute(text("ALTER TABLE clinicians ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE"))
     conn.execute(text("ALTER TABLE follow_up_tasks ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP"))
     conn.execute(text("ALTER TABLE follow_up_tasks ADD COLUMN IF NOT EXISTS reminder_delivery_status VARCHAR"))
     conn.execute(text("ALTER TABLE follow_up_tasks ADD COLUMN IF NOT EXISTS patient_response VARCHAR"))
