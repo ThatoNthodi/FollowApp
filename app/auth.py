@@ -99,6 +99,19 @@ def get_current_patient(
     return patient
 
 
+def get_current_patient_with_consent(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+) -> models.Patient:
+    patient = get_current_patient(token=token, db=db)
+
+    if not patient.consent_given:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="POPIA consent is required to access patient health information.",
+        )
+
+    return patient
+
 optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 

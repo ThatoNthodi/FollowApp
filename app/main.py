@@ -18,6 +18,7 @@ from app.auth import (
     get_current_clinician,
     get_current_admin,
     get_current_patient,
+    get_current_patient_with_consent,
     get_current_user_any_role,
     oauth2_scheme,
     SECRET_KEY,
@@ -665,7 +666,7 @@ async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)):
 )
 def get_my_portal(
     db: Session = Depends(get_db),
-    current_patient: models.Patient = Depends(get_current_patient),
+    current_patient: models.Patient = Depends(get_current_patient_with_consent),
 ):
     """Authenticated patient's own care plan - scoped to their token, not a
     URL parameter, so a patient can never view anyone else's data."""
@@ -742,7 +743,7 @@ def _build_portal_view(patient_id: str, db: Session) -> schemas.PatientPortalVie
 @app.post("/ai/chat", response_model=schemas.AIChatResponse)
 def ai_chat(
     payload: schemas.AIChatRequest,
-    current_patient: models.Patient = Depends(get_current_patient),
+    current_patient: models.Patient = Depends(get_current_patient_with_consent),
     db: Session = Depends(get_db),
 ):
     safety = assess_ai_safety(payload.message)
