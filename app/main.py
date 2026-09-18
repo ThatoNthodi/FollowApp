@@ -550,7 +550,15 @@ def complete_follow_up_task(
     db: Session = Depends(get_db),
     current_clinician: models.Clinician = Depends(get_current_clinician),
 ):
-    task = db.query(models.FollowUpTask).filter(models.FollowUpTask.id == task_id).first()
+    task = (
+        db.query(models.FollowUpTask)
+        .join(models.Consultation)
+        .filter(
+            models.FollowUpTask.id == task_id,
+            models.Consultation.clinician_id == current_clinician.id,
+        )
+        .first()
+    )
     if not task:
         raise HTTPException(status_code=404, detail="Follow-up task not found")
     task.status = models.TaskStatus.completed
@@ -571,7 +579,15 @@ def send_follow_up_reminder(
     db: Session = Depends(get_db),
     current_clinician: models.Clinician = Depends(get_current_clinician),
 ):
-    task = db.query(models.FollowUpTask).filter(models.FollowUpTask.id == task_id).first()
+    task = (
+        db.query(models.FollowUpTask)
+        .join(models.Consultation)
+        .filter(
+            models.FollowUpTask.id == task_id,
+            models.Consultation.clinician_id == current_clinician.id,
+        )
+        .first()
+    )
     if not task:
         raise HTTPException(status_code=404, detail="Follow-up task not found")
 
