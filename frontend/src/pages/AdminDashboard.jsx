@@ -65,6 +65,29 @@ export default function AdminDashboard() {
     }
   }
 
+  async function toggleActive(clinician) {
+    if (
+      clinician.is_active &&
+      !window.confirm(
+        `Deactivate ${clinician.full_name}? They will be signed out immediately and won't be able to log in again until reactivated. Their existing patients, consultations, and follow-up tasks are unaffected.`,
+      )
+    ) {
+      return
+    }
+
+    try {
+      if (clinician.is_active) {
+        await api.deactivateClinician(clinician.id)
+      } else {
+        await api.reactivateClinician(clinician.id)
+      }
+
+      await loadClinicians()
+    } catch (err) {
+      setError(err.message || 'Could not update clinician')
+    }
+  }
+
   return (
     <div className="admin-page">
       <div className="admin-page-header">
@@ -123,13 +146,17 @@ export default function AdminDashboard() {
                       <th>Overdue</th>
                       <th>Completed</th>
                       <th>Access</th>
+                      <th>Status</th>
                       <th></th>
                     </tr>
                   </thead>
 
                   <tbody>
                     {clinicians.map((clinician) => (
-                      <tr key={clinician.id}>
+                      <tr
+                        key={clinician.id}
+                        style={clinician.is_active ? undefined : { opacity: 0.55 }}
+                      >
                         <td>
                           <div className="admin-clinician-name">
                             {clinician.full_name}
@@ -158,13 +185,37 @@ export default function AdminDashboard() {
                         </td>
 
                         <td>
+                          <span
+                            className={
+                              clinician.is_active
+                                ? 'admin-badge admin-badge-admin'
+                                : 'admin-badge'
+                            }
+                          >
+                            {clinician.is_active ? 'Active' : 'Deactivated'}
+                          </span>
+                        </td>
+
+                        <td>
                           <button
                             className="btn admin-action"
                             onClick={() => toggleAdmin(clinician)}
+                            disabled={!clinician.is_active}
+                            title={
+                              clinician.is_active
+                                ? undefined
+                                : 'Reactivate this clinician before changing their admin access'
+                            }
                           >
                             {clinician.is_admin
                               ? 'Remove admin'
                               : 'Make admin'}
+                          </button>{' '}
+                          <button
+                            className="btn admin-action"
+                            onClick={() => toggleActive(clinician)}
+                          >
+                            {clinician.is_active ? 'Deactivate' : 'Reactivate'}
                           </button>
                         </td>
                       </tr>

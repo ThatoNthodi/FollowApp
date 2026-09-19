@@ -119,6 +119,16 @@ export const api = {
       method: 'POST',
     }),
 
+  deactivateClinician: (clinicianId) =>
+    request(`/admin/clinicians/${clinicianId}/deactivate`, {
+      method: 'POST',
+    }),
+
+  reactivateClinician: (clinicianId) =>
+    request(`/admin/clinicians/${clinicianId}/reactivate`, {
+      method: 'POST',
+    }),
+
   submitFeedback: (message) =>
     request('/feedback', {
       method: 'POST',
