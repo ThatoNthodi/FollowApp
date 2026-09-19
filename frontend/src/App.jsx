@@ -89,6 +89,26 @@ function ClinicianShell() {
               Patients
             </NavLink>
           </li>
+          {clinician?.is_admin && (
+            <>
+              <li>
+                <NavLink
+                  to="/dashboard"
+                  className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}
+                >
+                  Dashboard
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/admin"
+                  className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}
+                >
+                  Admin
+                </NavLink>
+              </li>
+            </>
+          )}
         </ul>
         <div className="sidebar-footer">
           {clinician && <p className="sidebar-clinician">{clinician.full_name}</p>}
