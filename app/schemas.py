@@ -81,6 +81,21 @@ class AuditLogOut(BaseModel):
     created_at: datetime
 
 
+class PracticeDashboardOut(BaseModel):
+    clinician_count: int
+    admin_count: int
+    patient_count: int
+    consultation_count: int
+    pending_task_count: int
+    overdue_task_count: int
+    completed_task_count: int
+    task_completion_rate: float  # completed / (completed + overdue + pending)
+    ai_conversation_count: int
+    ai_conversations_flagged: int
+    ai_conversations_pending_review: int  # flagged and not yet reviewed
+    recent_activity: List[AuditLogOut]
+
+
 # ---------- Follow-up task ----------
 
 class FollowUpTaskCreate(BaseModel):

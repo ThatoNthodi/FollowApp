@@ -485,6 +485,80 @@ def admin_list_audit_log(
     )
 
 
+@app.get(
+    "/admin/dashboard",
+    response_model=schemas.PracticeDashboardOut,
+    tags=["admin"],
+)
+def admin_dashboard(
+    db: Session = Depends(get_db),
+    current_admin: models.Clinician = Depends(get_current_admin),
+):
+    """Practice-wide snapshot: headcounts, task completion/overdue rates,
+    AI conversations needing review, and recent audit activity. Not
+    tenant-scoped yet - covers the whole system (see the note on
+    /admin/clinicians)."""
+    clinician_count = db.query(models.Clinician).count()
+    admin_count = db.query(models.Clinician).filter(models.Clinician.is_admin == True).count()  # noqa: E712
+    patient_count = db.query(models.Patient).count()
+    consultation_count = db.query(models.Consultation).count()
+
+    pending_task_count = (
+        db.query(models.FollowUpTask)
+        .filter(models.FollowUpTask.status == models.TaskStatus.pending)
+        .count()
+    )
+    overdue_task_count = (
+        db.query(models.FollowUpTask)
+        .filter(models.FollowUpTask.status == models.TaskStatus.overdue)
+        .count()
+    )
+    completed_task_count = (
+        db.query(models.FollowUpTask)
+        .filter(models.FollowUpTask.status == models.TaskStatus.completed)
+        .count()
+    )
+    total_tasks = pending_task_count + overdue_task_count + completed_task_count
+    task_completion_rate = (completed_task_count / total_tasks) if total_tasks else 0.0
+
+    ai_conversation_count = db.query(models.AIConversation).count()
+    ai_conversations_flagged = (
+        db.query(models.AIConversation)
+        .filter(models.AIConversation.requires_human_review == True)  # noqa: E712
+        .count()
+    )
+    ai_conversations_pending_review = (
+        db.query(models.AIConversation)
+        .filter(
+            models.AIConversation.requires_human_review == True,  # noqa: E712
+            models.AIConversation.reviewed_at.is_(None),
+        )
+        .count()
+    )
+
+    recent_activity = (
+        db.query(models.AuditLog)
+        .order_by(models.AuditLog.created_at.desc())
+        .limit(20)
+        .all()
+    )
+
+    return schemas.PracticeDashboardOut(
+        clinician_count=clinician_count,
+        admin_count=admin_count,
+        patient_count=patient_count,
+        consultation_count=consultation_count,
+        pending_task_count=pending_task_count,
+        overdue_task_count=overdue_task_count,
+        completed_task_count=completed_task_count,
+        task_completion_rate=round(task_completion_rate, 4),
+        ai_conversation_count=ai_conversation_count,
+        ai_conversations_flagged=ai_conversations_flagged,
+        ai_conversations_pending_review=ai_conversations_pending_review,
+        recent_activity=recent_activity,
+    )
+
+
 # ---------- Consultations ----------
 
 @app.post("/consultations", response_model=schemas.ConsultationOut, tags=["consultations"])
