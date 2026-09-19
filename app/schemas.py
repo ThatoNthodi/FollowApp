@@ -68,6 +68,19 @@ class ClinicianActivityOut(ClinicianOut):
     completed_task_count: int
 
 
+class AuditLogOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    actor_type: str
+    actor_id: Optional[str] = None
+    action: str
+    resource_type: Optional[str] = None
+    resource_id: Optional[str] = None
+    details: Optional[str] = None
+    created_at: datetime
+
+
 # ---------- Follow-up task ----------
 
 class FollowUpTaskCreate(BaseModel):

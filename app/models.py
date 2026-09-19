@@ -122,6 +122,23 @@ class AIConversation(Base):
     reviewed_by = relationship("Clinician")
 
 
+class AuditLog(Base):
+    """Record of a key action, for accountability and POPIA-relevant audit
+    trail purposes. actor_type/actor_id identify who did it ("clinician",
+    "patient", or "system" for automated actions with no actor_id)."""
+
+    __tablename__ = "audit_logs"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    actor_type = Column(String, nullable=False)  # "clinician" | "patient" | "system"
+    actor_id = Column(UUID(as_uuid=False), nullable=True)
+    action = Column(String, nullable=False)
+    resource_type = Column(String, nullable=True)
+    resource_id = Column(UUID(as_uuid=False), nullable=True)
+    details = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Feedback(Base):
     """Free-text feedback submitted by a patient or clinician while testing the app."""
 

@@ -1,5 +1,7 @@
 from typing import List
 from datetime import datetime
+import os
+import secrets
 
 from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +31,8 @@ from app.whatsapp import send_whatsapp_message, normalize_phone, TemplateRequire
 from app.ai_service import generate_ai_response, build_patient_context
 from app.email_service import send_feedback_notification
 from app.ai_safety import assess_ai_safety
+from app.audit import log_audit_event
+from app.scheduler import start_scheduler, stop_scheduler
 Base.metadata.create_all(bind=engine)
 
 # Lightweight startup migration: add columns introduced after the initial
@@ -71,6 +75,16 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+def _on_startup():
+    start_scheduler()
+
+
+@app.on_event("shutdown")
+def _on_shutdown():
+    stop_scheduler()
+
+
 @app.get("/", tags=["health"])
 def root():
     return {"status": "ok", "service": "FollowApp API"}
@@ -79,6 +93,24 @@ def root():
 @app.get("/health", tags=["health"])
 def health_check():
     return {"status": "healthy"}
+
+
+@app.post("/tasks/sync-overdue", tags=["health"])
+def trigger_sync_overdue_tasks(request: Request, db: Session = Depends(get_db)):
+    """Scheduled entry point (Render Cron Job or external ping) for flipping
+    pending tasks to overdue and emailing the responsible clinician, on top
+    of the in-process scheduler. Protected by a shared secret rather than
+    clinician auth, since a caller here has no login of its own."""
+    expected_secret = os.getenv("CRON_SECRET")
+    if not expected_secret:
+        raise HTTPException(status_code=503, detail="CRON_SECRET is not configured")
+
+    provided_secret = request.headers.get("x-cron-secret")
+    if not provided_secret or not secrets.compare_digest(provided_secret, expected_secret):
+        raise HTTPException(status_code=401, detail="Invalid or missing cron secret")
+
+    updated_count = sync_overdue_tasks(db)
+    return {"tasks_flipped_to_overdue": updated_count}
 
 
 # ---------- Auth ----------
@@ -112,6 +144,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         form_data.password, clinician.hashed_password
     ):
         access_token = create_access_token(data={"sub": clinician.id, "role": "clinician"})
+        log_audit_event(db, actor_type="clinician", actor_id=clinician.id, action="login")
+        db.commit()
         return {"access_token": access_token, "token_type": "bearer", "role": "clinician"}
 
     patient = db.query(models.Patient).filter(models.Patient.email == form_data.username).first()
@@ -119,6 +153,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         form_data.password, patient.hashed_password
     ):
         access_token = create_access_token(data={"sub": patient.id, "role": "patient"})
+        log_audit_event(db, actor_type="patient", actor_id=patient.id, action="login")
+        db.commit()
         return {"access_token": access_token, "token_type": "bearer", "role": "patient"}
 
     raise HTTPException(status_code=401, detail="Incorrect email or password")
@@ -219,6 +255,17 @@ def create_patient(
     db.add(db_patient)
     db.commit()
     db.refresh(db_patient)
+
+    log_audit_event(
+        db,
+        actor_type="clinician",
+        actor_id=current_clinician.id,
+        action="patient_created",
+        resource_type="patient",
+        resource_id=db_patient.id,
+    )
+    db.commit()
+
     return db_patient
 
 
@@ -362,6 +409,16 @@ def admin_promote_clinician(
         raise HTTPException(status_code=404, detail="Clinician not found")
 
     clinician.is_admin = True
+
+    log_audit_event(
+        db,
+        actor_type="clinician",
+        actor_id=current_admin.id,
+        action="clinician_promoted",
+        resource_type="clinician",
+        resource_id=clinician.id,
+    )
+
     db.commit()
     db.refresh(clinician)
     return clinician
@@ -394,9 +451,38 @@ def admin_demote_clinician(
             )
 
     clinician.is_admin = False
+
+    log_audit_event(
+        db,
+        actor_type="clinician",
+        actor_id=current_admin.id,
+        action="clinician_demoted",
+        resource_type="clinician",
+        resource_id=clinician.id,
+    )
+
     db.commit()
     db.refresh(clinician)
     return clinician
+
+
+@app.get(
+    "/admin/audit-log",
+    response_model=List[schemas.AuditLogOut],
+    tags=["admin"],
+)
+def admin_list_audit_log(
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_admin: models.Clinician = Depends(get_current_admin),
+):
+    limit = max(1, min(limit, 500))
+    return (
+        db.query(models.AuditLog)
+        .order_by(models.AuditLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
 
 
 # ---------- Consultations ----------
@@ -427,6 +513,16 @@ def create_consultation(
             **task.model_dump(),
         )
         db.add(db_task)
+
+    log_audit_event(
+        db,
+        actor_type="clinician",
+        actor_id=current_clinician.id,
+        action="consultation_created",
+        resource_type="consultation",
+        resource_id=db_consultation.id,
+        details=f"patient_id={consultation.patient_id}",
+    )
     db.commit()
     db.refresh(db_consultation)
 
@@ -562,6 +658,17 @@ def complete_follow_up_task(
     if not task:
         raise HTTPException(status_code=404, detail="Follow-up task not found")
     task.status = models.TaskStatus.completed
+
+    log_audit_event(
+        db,
+        actor_type="clinician",
+        actor_id=current_clinician.id,
+        action="task_status_changed",
+        resource_type="follow_up_task",
+        resource_id=task.id,
+        details="-> completed",
+    )
+
     db.commit()
     db.refresh(task)
     return task
@@ -797,6 +904,17 @@ def ai_chat(
             requires_human_review=safety["requires_human_review"],
         )
         db.add(conversation)
+        db.flush()  # assigns conversation.id before we reference it below
+
+        log_audit_event(
+            db,
+            actor_type="patient",
+            actor_id=current_patient.id,
+            action="ai_conversation_flagged",
+            resource_type="ai_conversation",
+            resource_id=conversation.id,
+            details=safety["category"],
+        )
         db.commit()
 
         return schemas.AIChatResponse(
@@ -878,6 +996,16 @@ def mark_ai_conversation_reviewed(
 
     conversation.reviewed_at = datetime.utcnow()
     conversation.reviewed_by_clinician_id = current_clinician.id
+
+    log_audit_event(
+        db,
+        actor_type="clinician",
+        actor_id=current_clinician.id,
+        action="ai_conversation_reviewed",
+        resource_type="ai_conversation",
+        resource_id=conversation.id,
+        details=conversation.category,
+    )
     db.commit()
     db.refresh(conversation)
     return conversation
