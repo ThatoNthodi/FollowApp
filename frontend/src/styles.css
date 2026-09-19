@@ -1554,3 +1554,66 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Practice dashboard (stat cards + activity feed) ---------- */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--white);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 18px 20px;
+}
+
+.stat-card-warn {
+  border-color: rgba(180, 67, 46, 0.35);
+  background: rgba(180, 67, 46, 0.04);
+}
+
+.stat-value {
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--ink-40);
+  margin: 4px 0 0 0;
+}
+
+.activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.activity-row:last-child {
+  border-bottom: none;
+}
+
+.activity-time {
+  font-size: 12.5px;
+  color: var(--ink-40);
+  flex-shrink: 0;
+  margin-left: 16px;
+}

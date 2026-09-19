@@ -107,6 +107,8 @@ export const api = {
 
   adminListClinicians: () => request('/admin/clinicians'),
 
+  getDashboard: () => request('/admin/dashboard'),
+
   promoteClinician: (clinicianId) =>
     request(`/admin/clinicians/${clinicianId}/promote`, {
       method: 'POST',

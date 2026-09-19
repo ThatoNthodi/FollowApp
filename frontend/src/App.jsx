@@ -1,4 +1,5 @@
 import AdminDashboard from './pages/AdminDashboard.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 import { useEffect, useState } from 'react'
 import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import PatientsList from './pages/PatientsList.jsx'
@@ -130,6 +131,15 @@ export default function App() {
            <RequireAdmin>
              <AdminDashboard />
            </RequireAdmin>
+        }
+      />
+
+      <Route
+        path="/dashboard"
+        element={
+          <RequireAdmin>
+            <Dashboard />
+          </RequireAdmin>
         }
       />
 
