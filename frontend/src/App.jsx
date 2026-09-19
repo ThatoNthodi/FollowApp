@@ -122,6 +122,22 @@ function ClinicianShell() {
         <Routes>
           <Route path="/" element={<PatientsList />} />
           <Route path="/patients/:patientId" element={<PatientDetail />} />
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAdmin>
+                <Dashboard />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <RequireAdmin>
+                <AdminDashboard />
+              </RequireAdmin>
+            }
+          />
         </Routes>
       </main>
 
@@ -142,24 +158,6 @@ export default function App() {
           <RequirePatient>
             <MyPortal />
           </RequirePatient>
-        }
-      />
-
-       <Route
-         path="/admin"
-         element={
-           <RequireAdmin>
-             <AdminDashboard />
-           </RequireAdmin>
-        }
-      />
-
-      <Route
-        path="/dashboard"
-        element={
-          <RequireAdmin>
-            <Dashboard />
-          </RequireAdmin>
         }
       />
 
