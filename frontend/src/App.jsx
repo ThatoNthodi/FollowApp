@@ -1,3 +1,4 @@
+import AdminDashboard from './pages/AdminDashboard.jsx'
 import { useEffect, useState } from 'react'
 import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import PatientsList from './pages/PatientsList.jsx'
@@ -9,6 +10,38 @@ import MyPortal from './pages/MyPortal.jsx'
 import FeedbackWidget from './components/FeedbackWidget.jsx'
 import { isAuthenticated, getRole, clearToken } from './auth.js'
 import { api } from './api.js'
+
+function RequireAdmin({ children }) {
+  const [checking, setChecking] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    api.getMe()
+      .then((me) => {
+        setIsAdmin(me.role === 'clinician' && me.clinician?.is_admin === true)
+      })
+      .catch(() => {
+        setIsAdmin(false)
+      })
+      .finally(() => {
+        setChecking(false)
+      })
+  }, [])
+
+  if (!isAuthenticated() || getRole() !== 'clinician') {
+    return <Navigate to="/login" replace />
+  }
+
+  if (checking) {
+    return <div className="admin-loading">Checking administrator access...</div>
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />
+  }
+
+  return children
+}
 
 function RequireClinician({ children }) {
   if (!isAuthenticated() || getRole() !== 'clinician') {
@@ -90,6 +123,16 @@ export default function App() {
           </RequirePatient>
         }
       />
+
+       <Route
+         path="/admin"
+         element={
+           <RequireAdmin>
+             <AdminDashboard />
+           </RequireAdmin>
+        }
+      />
+
       <Route
         path="/*"
         element={
@@ -98,6 +141,7 @@ export default function App() {
           </RequireClinician>
         }
       />
+
     </Routes>
   )
 }

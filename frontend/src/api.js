@@ -105,6 +105,18 @@ export const api = {
       body: JSON.stringify({ message }),
     }),
 
+  adminListClinicians: () => request('/admin/clinicians'),
+
+  promoteClinician: (clinicianId) =>
+    request(`/admin/clinicians/${clinicianId}/promote`, {
+      method: 'POST',
+    }),
+
+  demoteClinician: (clinicianId) =>
+    request(`/admin/clinicians/${clinicianId}/demote`, {
+      method: 'POST',
+    }),
+
   submitFeedback: (message) =>
     request('/feedback', {
       method: 'POST',
