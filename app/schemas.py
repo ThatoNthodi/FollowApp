@@ -58,6 +58,7 @@ class ClinicianOut(BaseModel):
     council: Optional[str] = None
     email: Optional[str] = None
     is_admin: bool = False
+    is_active: bool = True
     created_at: datetime
 
 

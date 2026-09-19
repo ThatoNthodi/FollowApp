@@ -44,6 +44,7 @@ with engine.connect() as conn:
     conn.execute(text("ALTER TABLE clinicians ADD COLUMN IF NOT EXISTS practice_number VARCHAR"))
     conn.execute(text("ALTER TABLE clinicians ADD COLUMN IF NOT EXISTS council VARCHAR"))
     conn.execute(text("ALTER TABLE clinicians ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE"))
+    conn.execute(text("ALTER TABLE clinicians ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"))
     conn.execute(text("ALTER TABLE follow_up_tasks ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP"))
     conn.execute(text("ALTER TABLE follow_up_tasks ADD COLUMN IF NOT EXISTS reminder_delivery_status VARCHAR"))
     conn.execute(text("ALTER TABLE follow_up_tasks ADD COLUMN IF NOT EXISTS patient_response VARCHAR"))
@@ -143,6 +144,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     if clinician and clinician.hashed_password and verify_password(
         form_data.password, clinician.hashed_password
     ):
+        if not clinician.is_active:
+            raise HTTPException(status_code=403, detail="This account has been deactivated")
         access_token = create_access_token(data={"sub": clinician.id, "role": "clinician"})
         log_audit_event(db, actor_type="clinician", actor_id=clinician.id, action="login")
         db.commit()
@@ -457,6 +460,93 @@ def admin_demote_clinician(
         actor_type="clinician",
         actor_id=current_admin.id,
         action="clinician_demoted",
+        resource_type="clinician",
+        resource_id=clinician.id,
+    )
+
+    db.commit()
+    db.refresh(clinician)
+    return clinician
+
+
+@app.post(
+    "/admin/clinicians/{clinician_id}/deactivate",
+    response_model=schemas.ClinicianOut,
+    tags=["admin"],
+)
+def admin_deactivate_clinician(
+    clinician_id: str,
+    db: Session = Depends(get_db),
+    current_admin: models.Clinician = Depends(get_current_admin),
+):
+    """Deactivates a clinician (they can no longer log in) rather than
+    deleting them - every patient, consultation, and follow-up task they
+    ever touched stays intact and correctly attributed, which matters for
+    the audit trail and POPIA record-keeping. True permanent deletion is
+    a separate, deliberate feature, not a routine admin action."""
+    clinician = db.query(models.Clinician).filter(models.Clinician.id == clinician_id).first()
+    if not clinician:
+        raise HTTPException(status_code=404, detail="Clinician not found")
+
+    if not clinician.is_active:
+        return clinician
+
+    if clinician.is_admin:
+        remaining_active_admins = (
+            db.query(models.Clinician)
+            .filter(
+                models.Clinician.is_admin == True,  # noqa: E712
+                models.Clinician.is_active == True,  # noqa: E712
+                models.Clinician.id != clinician.id,
+            )
+            .count()
+        )
+        if remaining_active_admins == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot deactivate the last remaining active admin",
+            )
+
+    clinician.is_active = False
+
+    log_audit_event(
+        db,
+        actor_type="clinician",
+        actor_id=current_admin.id,
+        action="clinician_deactivated",
+        resource_type="clinician",
+        resource_id=clinician.id,
+    )
+
+    db.commit()
+    db.refresh(clinician)
+    return clinician
+
+
+@app.post(
+    "/admin/clinicians/{clinician_id}/reactivate",
+    response_model=schemas.ClinicianOut,
+    tags=["admin"],
+)
+def admin_reactivate_clinician(
+    clinician_id: str,
+    db: Session = Depends(get_db),
+    current_admin: models.Clinician = Depends(get_current_admin),
+):
+    clinician = db.query(models.Clinician).filter(models.Clinician.id == clinician_id).first()
+    if not clinician:
+        raise HTTPException(status_code=404, detail="Clinician not found")
+
+    if clinician.is_active:
+        return clinician
+
+    clinician.is_active = True
+
+    log_audit_event(
+        db,
+        actor_type="clinician",
+        actor_id=current_admin.id,
+        action="clinician_reactivated",
         resource_type="clinician",
         resource_id=clinician.id,
     )

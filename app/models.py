@@ -61,6 +61,7 @@ class Clinician(Base):
     email = Column(String, nullable=True, unique=True)
     hashed_password = Column(String, nullable=True)
     is_admin = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     consultations = relationship("Consultation", back_populates="clinician")

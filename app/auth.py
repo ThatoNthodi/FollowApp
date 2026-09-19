@@ -56,7 +56,7 @@ def get_current_clinician(
         raise credentials_error
 
     clinician = db.query(models.Clinician).filter(models.Clinician.id == user_id).first()
-    if clinician is None:
+    if clinician is None or not clinician.is_active:
         raise credentials_error
     return clinician
 
